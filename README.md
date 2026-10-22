@@ -1,0 +1,97 @@
+# Kernel
+
+A small runtime foundation for Roblox games, installed as one ModuleScript at `ReplicatedFirst.Kernel`. It gives every script the same startup phases, events, task scheduling, cleanup and lazily loaded utilities, without project-specific code.
+
+```luau
+local Kernel = require(game.ReplicatedFirst.Kernel)
+```
+
+> **Status: `0.2.0-candidate.4` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
+
+## Installation
+
+The `Kernel` folder is the module: `Kernel/init.luau` is the `Kernel` ModuleScript and each subfolder's `init.luau` is a child ModuleScript with the folder's name (`Kernel/_Task/init.luau` becomes `ReplicatedFirst.Kernel._Task`). This is the standard `init.luau` layout used by Roblox file-sync tools; you can also create the ModuleScripts by hand with the same names and hierarchy.
+
+Place it in **ReplicatedFirst** so it is available to client scripts as early as possible. Requiring the Kernel never waits for the game to load.
+
+## Startup phases
+
+Scripts coordinate through four ordered phases instead of a central loader:
+
+| Phase | Use it for |
+|---|---|
+| `Preload` | Declaring exports and configuration before anything runs |
+| `Shared` | Shared services that other systems depend on |
+| `Runtime` | Gameplay systems |
+| `Ready` | Work that needs everything else in place |
+
+```luau
+local Kernel = require(game.ReplicatedFirst.Kernel)
+
+Kernel.Yield("Preload")
+Kernel.Define({
+	name = "Shop",
+	value = Shop,
+	purpose = "Sells items for coins.",
+	dependencies = {"Inventory"},
+})
+
+Kernel.Yield("Runtime")
+Kernel.Inventory.Add(player, "Sword") -- Exports are read as Kernel.<name>.
+```
+
+- `Kernel.Yield(phase)` suspends the script until every earlier phase has completed. It does not wait for other scripts in the same phase.
+- `Kernel.Define({name, value, purpose, dependencies?})` registers a read-only export. Duplicate names are rejected, and dependencies still missing when `Ready` finishes fail startup with a clear message.
+- `Kernel.Info()` returns diagnostics: exports, phase status and timing, late yields and failures.
+- On the client, the first phase starts after `game.Loaded`. An error in a phase stops later phases and is reported.
+
+## Modules
+
+| Export | What it does |
+|---|---|
+| `Kernel.Task` | `Spawn`, `Defer`, `Delay`, `Wait` (native `task`) and `Cancel(thread)`, which refuses to cancel the running thread |
+| `Kernel.Events` | Named local events: `Connect`, `Once`, `Fire` (scheduled), `FireYield` (inline), retained state with `FireState`/`Observe`/`WaitState`, plus `Wait`, `HasState`, `ClearState` |
+| `Kernel.Recycle` | `Recycle.new()` collects functions, threads, instances, connections and objects with `Disconnect`/`Destroy`; `:Destroy()` cleans everything once, even if one cleanup fails |
+| `Kernel.Beat` | `Heartbeat`, `Stepped`, `PreSimulation`, `PostSimulation`, `PreAnimation` (and `PreRender`, `RenderStepped` on the client). Each returns a disconnect function; pass a number first to throttle: `Beat.Heartbeat(0.5, callback)` |
+| `Kernel.Players` | `Added(callback)` and `Removed(callback)` for current and future players; `Online` lists them |
+| `Kernel.Class` | Builds a constructor from a table with optional `Constructor` and `Destructor` |
+| `Kernel.Multiplier` | Creates multiplier groups that combine named sources per type, with `Set`, `Get`, `GetSource` and `Changed` |
+| `Kernel.Configs` | Lazily requires ModuleScripts from `ReplicatedStorage.Configs` (subfolders nest): `Kernel.Configs.Items.Sword` |
+| `Kernel.Assets` | Lazily maps instances in `ReplicatedStorage.Assets`: `Kernel.Assets.Effects.Spark` |
+| `Kernel.Utils` | Common utilities loaded on first use |
+
+### Events
+
+```luau
+local disconnect = Kernel.Events.Connect("Round Started", function(round)
+	print("Round", round)
+end)
+Kernel.Events.Fire("Round Started", 3)
+
+-- Retained state: late observers still receive the latest value.
+Kernel.Events.FireState("Map Ready", workspace.Map)
+Kernel.Events.Observe("Map Ready", function(map) end)
+```
+
+`Fire` schedules listeners with `task.spawn`; `FireYield` runs them inline. Callbacks receive `nil` arguments intact, and listener completion order is not guaranteed.
+
+### Utilities
+
+`Kernel.Utils.<Name>` requires `Kernel._Utils._<Name>` the first time it is used and caches it:
+
+`AnimateText`, `Bezier`, `Debounce`, `FormatNumber`, `FormatText`, `FormatTime`, `GetPositionInBox`, `Gradient`, `Ground`, `Group`, `GuiTemplates`, `LazyRender`, `Particles`, `Physics`, `Property`, `RequirementResolver`, `RunBezier`, `Search`, `SectionList`, `Stream`, `StreamSignals`, `Table`, `TablePool`, `VisualState`, plus `GetRandomUID()`.
+
+```luau
+local Utils = require(game.ReplicatedFirst.Kernel).Utils
+print(Utils.FormatNumber(1250))
+```
+
+Unknown names raise an error; there is no fallback folder.
+
+### `_ProfileData`
+
+`Kernel._ProfileData` validates and copies serializable data trees (finite numbers, booleans, strings, dense arrays and string-keyed dictionaries; no cycles) and computes change paths. It supports a separate player-data runtime and is not a public `Kernel` export.
+
+## License
+
+[MIT](LICENSE)
