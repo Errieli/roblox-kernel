@@ -6,11 +6,11 @@ A small runtime foundation for Roblox games, installed as one ModuleScript at `R
 local Kernel = require(game.ReplicatedFirst.Kernel)
 ```
 
-> **Status: `0.2.0-candidate.4` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
+> **Status: `0.2.0-candidate.13` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
 
 ## Installation
 
-The `Kernel` folder is the module: `Kernel/init.luau` is the `Kernel` ModuleScript and each subfolder's `init.luau` is a child ModuleScript with the folder's name (`Kernel/_Task/init.luau` becomes `ReplicatedFirst.Kernel._Task`). This is the standard `init.luau` layout used by Roblox file-sync tools; you can also create the ModuleScripts by hand with the same names and hierarchy.
+This repository is the module: `init.luau` is the `Kernel` ModuleScript and each subfolder's `init.luau` is a child ModuleScript with the folder's name (`_Task/init.luau` becomes `ReplicatedFirst.Kernel._Task`). This is the standard `init.luau` layout used by Roblox file-sync tools: point a folder named `Kernel` at a clone of this repository (for example as a git submodule), or create the ModuleScripts by hand with the same names and hierarchy.
 
 Place it in **ReplicatedFirst** so it is available to client scripts as early as possible. Requiring the Kernel never waits for the game to load.
 
@@ -29,20 +29,20 @@ Scripts coordinate through four ordered phases instead of a central loader:
 local Kernel = require(game.ReplicatedFirst.Kernel)
 
 Kernel.Yield("Preload")
-Kernel.Define({
+Kernel{
 	name = "Shop",
 	value = Shop,
 	purpose = "Sells items for coins.",
 	dependencies = {"Inventory"},
-})
+}
 
 Kernel.Yield("Runtime")
 Kernel.Inventory.Add(player, "Sword") -- Exports are read as Kernel.<name>.
 ```
 
-- `Kernel.Yield(phase)` suspends the script until every earlier phase has completed. It does not wait for other scripts in the same phase.
-- `Kernel.Define({name, value, purpose, dependencies?})` registers a read-only export. Duplicate names are rejected, and dependencies still missing when `Ready` finishes fail startup with a clear message.
-- `Kernel.Info()` returns diagnostics: exports, phase status and timing, late yields and failures.
+- `Kernel.Yield(phase)` suspends the script until every earlier phase has completed. It does not wait for other scripts in the same phase. It takes only the phase: code that must not block its script runs in `Kernel.Task.Spawn(function() ... end)`.
+- `Kernel{name, value, purpose, dependencies?}` registers a read-only export; it is the only registration form. Duplicate names are rejected, and dependencies still missing when `Ready` finishes fail startup with a clear message.
+- `Kernel.Info()` returns diagnostics: each export's purpose and dependencies, phase status and timing, failures, stalled phases and missing dependencies.
 - On the client, the first phase starts after `game.Loaded`. An error in a phase stops later phases and is reported.
 
 ## Modules
@@ -58,7 +58,7 @@ Kernel.Inventory.Add(player, "Sword") -- Exports are read as Kernel.<name>.
 | `Kernel.Multiplier` | Creates multiplier groups that combine named sources per type, with `Set`, `Get`, `GetSource` and `Changed` |
 | `Kernel.Configs` | Lazily requires ModuleScripts from `ReplicatedStorage.Configs` (subfolders nest): `Kernel.Configs.Items.Sword` |
 | `Kernel.Assets` | Lazily maps instances in `ReplicatedStorage.Assets`: `Kernel.Assets.Effects.Spark` |
-| `Kernel.Utils` | Common utilities loaded on first use |
+| `Kernel.Utils` | Your game's utilities in `ReplicatedStorage.Utils`, loaded on first use |
 
 ### Events
 
@@ -77,16 +77,14 @@ Kernel.Events.Observe("Map Ready", function(map) end)
 
 ### Utilities
 
-`Kernel.Utils.<Name>` requires `Kernel._Utils._<Name>` the first time it is used and caches it:
-
-`AnimateText`, `Bezier`, `Debounce`, `FormatNumber`, `FormatText`, `FormatTime`, `GetPositionInBox`, `Gradient`, `Ground`, `Group`, `GuiTemplates`, `LazyRender`, `Particles`, `Physics`, `Property`, `RequirementResolver`, `RunBezier`, `Search`, `SectionList`, `Stream`, `StreamSignals`, `Table`, `TablePool`, `VisualState`, plus `GetRandomUID()`.
+`Kernel.Utils.<Name>` requires `ReplicatedStorage.Utils.<Name>` the first time it is used and caches it. Folders nest (`Kernel.Utils.Text.FormatTime`). The Kernel ships no utilities: put the ModuleScripts your game needs in `ReplicatedStorage.Utils`.
 
 ```luau
 local Utils = require(game.ReplicatedFirst.Kernel).Utils
-print(Utils.FormatNumber(1250))
+print(Utils.FormatNumber.Compact(1500)) -- 1.5K
 ```
 
-Unknown names raise an error; there is no fallback folder.
+A missing `Utils` folder or utility raises an error that names it.
 
 ### `_ProfileData`
 
