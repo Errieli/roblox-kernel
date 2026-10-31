@@ -2,6 +2,7 @@ local RunService = game:GetService("RunService")
 local ScriptContext = game:GetService("ScriptContext")
 local Task = require(script._Task)
 local Diagnostics = require(script._Diagnostics)
+local Exports = require(script._Exports)
 
 local PHASES = {
 	Preload = 1,
@@ -12,9 +13,8 @@ local PHASES = {
 local PHASE_NAMES = {"Preload", "Shared", "Runtime", "Ready"}
 local PHASE_COUNT = #PHASE_NAMES
 
-local hidden = {}
+local hidden = Exports.Values
 local meta = {}
-local exportInfo = {}
 local calls = {}
 local waitingThreads = {}
 local sourcePhases = {}
@@ -78,29 +78,6 @@ local function trackRegistrationThread()
 		sourcePhases[source] = PHASES.Preload
 		threadSources[thread] = threadSources[thread] or source
 	end
-end
-
-local function register(name, value, metadata)
-	if bootstrapFailure then error(bootstrapFailure.message, 3) end
-	assert(typeof(name) == "string" and name ~= "", "Kernel export name must be a non-empty string")
-	assert(value ~= nil, "Kernel export value is required: " .. name)
-	assert(rawget(hidden, name) == nil, "Duplicate Kernel export: " .. name)
-	assert(typeof(metadata) == "table", "Kernel export metadata is required: " .. name)
-	assert(typeof(metadata.purpose) == "string" and metadata.purpose ~= "", "Kernel export purpose is required: " .. name)
-
-	local dependencies = metadata.dependencies
-	if dependencies == nil then dependencies = {} end
-	assert(typeof(dependencies) == "table", "Kernel dependencies must be a table: " .. name)
-	dependencies = table.clone(dependencies)
-	for _, dependency in ipairs(dependencies) do
-		assert(typeof(dependency) == "string" and dependency ~= "", "Invalid Kernel dependency for " .. name)
-	end
-
-	trackRegistrationThread()
-	rawset(hidden, name, value)
-	exportInfo[name] = {purpose = metadata.purpose, dependencies = dependencies}
-
-	return value
 end
 
 -- Optional bootstrap policy. PhaseStallSeconds = false disables the stall warning.
@@ -177,18 +154,6 @@ function hidden.Yield(phase, unexpected)
 	end
 end
 
-local function collectMissingDependencies()
-	local result = {}
-	for name, details in pairs(exportInfo) do
-		local missing = {}
-		for _, dependency in ipairs(details.dependencies) do
-			if rawget(hidden, dependency) == nil then missing[#missing + 1] = dependency end
-		end
-		if #missing > 0 then result[name] = missing end
-	end
-	return result
-end
-
 function hidden.Info()
 	return Diagnostics.Snapshot({
 		environment = runtimeEnvironment,
@@ -199,12 +164,12 @@ function hidden.Info()
 		phaseStates = phaseStates,
 		waitingThreads = waitingThreads,
 		threadSources = threadSources,
-		exportInfo = exportInfo,
+		exportInfo = Exports.Info,
 		phaseFailures = phaseFailures,
 		phaseStalls = phaseStalls,
 		stallSeconds = stallSeconds,
 		bootstrapFailure = bootstrapFailure,
-		missingDependencies = collectMissingDependencies(),
+		missingDependencies = Exports.Missing(),
 	}, os.clock())
 end
 
@@ -219,29 +184,24 @@ end
 -- Kernel{name = ..., value = ..., purpose = ..., dependencies = {...}} is the only registration form.
 function meta:__call(definition)
 	assert(typeof(definition) == "table", "Kernel{...} expects a definition table")
-	return register(definition.name, definition.value, {
-		purpose = definition.purpose,
-		dependencies = definition.dependencies,
-	})
+	if bootstrapFailure then error(bootstrapFailure.message, 2) end
+	Exports.Add(definition)
+	trackRegistrationThread()
+	return definition.value
 end
 
-local function registerBuiltin(name, value, purpose)
-	rawset(hidden, name, value)
-	exportInfo[name] = {purpose = purpose, dependencies = {}}
-end
-
-registerBuiltin("Task", Task, "Schedules visible asynchronous work and cancellation.")
-registerBuiltin("Beat", require(script._Beat), "Connects callbacks to Roblox simulation and render signals.")
-registerBuiltin("Class", require(script._Class), "Creates lightweight classes with constructor and destructor lifecycle.")
+Exports.AddBuiltin("Task", Task, "Schedules visible asynchronous work and cancellation.")
+Exports.AddBuiltin("Beat", require(script._Beat), "Connects callbacks to Roblox simulation and render signals.")
+Exports.AddBuiltin("Class", require(script._Class), "Creates lightweight classes with constructor and destructor lifecycle.")
 -- Utilities belong to the game (ReplicatedStorage.Utils);
 -- Kernel.Utils.Name finds them without a require and names the missing one when absent.
-registerBuiltin("Utils", require(script._LazyTree)("Utils", "Utility"), "Lazily resolves the game's utilities in ReplicatedStorage.Utils.")
-registerBuiltin("Events", require(script._Events), "Coordinates transient, synchronous, and retained local events.")
-registerBuiltin("Players", require(script._Players), "Observes the live player collection.")
-registerBuiltin("Multiplier", require(script._Multiplier), "Combines named multiplier sources and change signals.")
-registerBuiltin("Recycle", require(script._Recycle), "Collects runtime resources for deterministic cleanup.")
-registerBuiltin("Configs", require(script._Configs), "Lazily resolves and caches configuration modules.")
-registerBuiltin("Assets", require(script._Assets), "Lazily maps replicated game assets.")
+Exports.AddBuiltin("Utils", require(script._LazyTree)("Utils", "Utility"), "Lazily resolves the game's utilities in ReplicatedStorage.Utils.")
+Exports.AddBuiltin("Events", require(script._Events), "Coordinates transient, synchronous, and retained local events.")
+Exports.AddBuiltin("Players", require(script._Players), "Observes the live player collection.")
+Exports.AddBuiltin("Multiplier", require(script._Multiplier), "Combines named multiplier sources and change signals.")
+Exports.AddBuiltin("Recycle", require(script._Recycle), "Collects runtime resources for deterministic cleanup.")
+Exports.AddBuiltin("Configs", require(script._Configs), "Lazily resolves and caches configuration modules.")
+Exports.AddBuiltin("Assets", require(script._Assets), "Lazily maps replicated game assets.")
 
 
 -- Diagnostic only: a stalled phase keeps waiting; it warns once with its holders.
@@ -353,14 +313,8 @@ local function runPhase(priority)
 	end
 
 	if priority == PHASE_COUNT then
-		local missing = collectMissingDependencies()
-		if next(missing) then
-			local unresolved = {}
-			for name, dependencies in pairs(missing) do
-				unresolved[#unresolved + 1] = name .. " -> " .. table.concat(dependencies, ", ")
-			end
-			table.sort(unresolved)
-			local message = "Unresolved dependencies: " .. table.concat(unresolved, "; ")
+		local message = Exports.Unresolved()
+		if message then
 			recordFailure(priority, script:GetFullName(), message)
 			failPhase(priority, message)
 			return
