@@ -3,6 +3,7 @@ local Task = require(script._Task)
 local Diagnostics = require(script._Diagnostics)
 local Exports = require(script._Exports)
 local Phases = require(script._Phases)
+local LazyTree = require(script._LazyTree)
 
 local exports = Exports.Values
 local meta = {}
@@ -49,13 +50,13 @@ Exports.AddBuiltin("Beat", require(script._Beat), "Connects callbacks to Roblox 
 Exports.AddBuiltin("Class", require(script._Class), "Creates lightweight classes with constructor and destructor lifecycle.")
 -- Utilities belong to the game (ReplicatedStorage.Utils);
 -- Kernel.Utils.Name finds them without a require and names the missing one when absent.
-Exports.AddBuiltin("Utils", require(script._LazyTree)("Utils", "Utility"), "Lazily resolves the game's utilities in ReplicatedStorage.Utils.")
+Exports.AddBuiltin("Utils", LazyTree("Utils", "Utility"), "Lazily resolves the game's utilities in ReplicatedStorage.Utils.")
 Exports.AddBuiltin("Events", require(script._Events), "Coordinates transient, synchronous, and retained local events.")
 Exports.AddBuiltin("Players", require(script._Players), "Observes the live player collection.")
 Exports.AddBuiltin("Multiplier", require(script._Multiplier), "Combines named multiplier sources and change signals.")
 Exports.AddBuiltin("Recycle", require(script._Recycle), "Collects runtime resources for deterministic cleanup.")
-Exports.AddBuiltin("Configs", require(script._Configs), "Lazily resolves and caches configuration modules.")
-Exports.AddBuiltin("Assets", require(script._Assets), "Lazily maps replicated game assets.")
+Exports.AddBuiltin("Configs", LazyTree("Configs", "Config"), "Lazily resolves and caches configuration modules.")
+Exports.AddBuiltin("Assets", LazyTree("Assets", "Asset", function(child) return child end), "Lazily maps replicated game assets.")
 
 Phases.Start(Exports.Unresolved)
 
