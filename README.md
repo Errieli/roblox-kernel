@@ -6,7 +6,7 @@ A small runtime foundation for Roblox games, installed as one ModuleScript at `R
 local Kernel = require(game.ReplicatedFirst.Kernel)
 ```
 
-> **Status: `0.2.0-candidate.13` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
+> **Status: `0.2.0-candidate.14` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
 
 ## Installation
 
