@@ -13,6 +13,7 @@ function DataTree.AssertShape(value)
 		DataTree.AssertKey(key)
 		if type(key) == "number" then numbers += 1; maxIndex = math.max(maxIndex, key) else strings += 1 end
 	end
+
 	assert(numbers == 0 or (strings == 0 and numbers == maxIndex), "Data tables must be dictionaries or dense arrays")
 end
 
@@ -24,6 +25,7 @@ function DataTree.AssertPath(path)
 		DataTree.AssertKey(key)
 		count += 1
 	end
+
 	assert(count == #path, "Sparse data path")
 end
 
@@ -44,6 +46,7 @@ local function copy(value, ancestors)
 	for key, child in value do
 		result[key] = copy(child, ancestors)
 	end
+
 	ancestors[value] = nil
 	return result
 end
@@ -64,9 +67,11 @@ function DataTree.Equal(left, right)
 	for key, value in left do
 		if not DataTree.Equal(value, right[key]) then return false end
 	end
+
 	for key in right do
 		if left[key] == nil then return false end
 	end
+
 	return true
 end
 
@@ -78,6 +83,7 @@ function DataTree.Parent(root, path)
 		if type(current) ~= "table" then return nil end
 		current = current[path[index]]
 	end
+
 	if type(current) ~= "table" then return nil end
 	return current, path[#path]
 end

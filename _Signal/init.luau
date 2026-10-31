@@ -36,6 +36,7 @@ local function dispatch(self, deliver, ...)
 	for _, token in table.clone(tokens) do
 		if token.Connected then deliver(token, ...) end
 	end
+
 	return true
 end
 

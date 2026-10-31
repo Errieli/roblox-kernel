@@ -49,9 +49,11 @@ local function resolvePhase(phase)
 		if priority then return priority end
 		error("Unknown Kernel phase: " .. phase, 3)
 	end
+
 	if typeof(phase) ~= "number" or phase % 1 ~= 0 or phase < 1 or phase > PHASE_COUNT then
 		error("Invalid Kernel phase: " .. tostring(phase), 3)
 	end
+
 	return phase
 end
 
@@ -62,6 +64,7 @@ local function sourceName()
 		if not success then break end
 		if source and not ownSources[source] and source ~= "[C]" then return source end
 	end
+
 	return "Unknown"
 end
 
@@ -83,10 +86,12 @@ function Phases.Configure(options)
 	for key in pairs(options) do
 		assert(key == "PhaseStallSeconds", "Unknown Kernel option: " .. tostring(key))
 	end
+
 	local seconds = options.PhaseStallSeconds
 	if seconds ~= nil and seconds ~= false then
 		assert(typeof(seconds) == "number" and seconds > 0 and seconds < math.huge, "PhaseStallSeconds must be a positive number or false")
 	end
+
 	configured = true
 	if seconds ~= nil then stallSeconds = seconds end
 end
@@ -227,11 +232,14 @@ local function failPhase(priority, message)
 		for thread in pairs(threads or {}) do
 			if thread ~= current and not pendingThreads[thread] then Task.Cancel(thread) end
 		end
+
 		waitingThreads[index] = nil
 	end
+
 	for thread in pairs(pendingThreads) do
 		if coroutine.status(thread) == "suspended" then Task.Defer(thread, false, message) end
 	end
+
 	warn(message)
 end
 
@@ -255,6 +263,7 @@ local function runPhase(priority, checkReady)
 	for _, entry in ipairs(phaseCalls) do
 		resumeWaiting(priority, entry.thread, running, entry.source)
 	end
+
 	waitForThreads(running, priority, since)
 	if bootstrapFailure then return end
 	waitingThreads[priority] = nil

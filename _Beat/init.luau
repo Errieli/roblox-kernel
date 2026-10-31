@@ -32,6 +32,7 @@ local function makeConnection(eventName: string)
 				tokens[write] = token
 			end
 		end
+
 		for index = #tokens, write + 1, -1 do tokens[index] = nil end
 		if write == 0 and connection then
 			connection:Disconnect()
@@ -58,6 +59,7 @@ local function makeConnection(eventName: string)
 
 			token.Cooldown -= debounce
 		end
+
 		dispatching = false
 		if dirty then compact() end
 	end

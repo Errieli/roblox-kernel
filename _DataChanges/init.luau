@@ -13,6 +13,7 @@ local function descendant(root, suffix)
 		if key == nil then return nil end
 		current = current[key]
 	end
+
 	return current
 end
 
@@ -26,6 +27,7 @@ local function affectedPaths(events, path, prefix)
 			if path == "" or string.sub(candidate, 1, #prefix) == prefix then paths[candidate] = true end
 		end
 	end
+
 	return paths
 end
 
@@ -39,10 +41,12 @@ local function computeTransitions(paths, path, prefix, value, old)
 			local suffix = string.sub(candidate, #prefix + 1)
 			nextValue, previous = descendant(value, suffix), descendant(old, suffix)
 		end
+
 		if not DataTree.Equal(nextValue, previous) then
 			table.insert(transitions, {Path = candidate, Value = DataTree.Copy(nextValue), Old = DataTree.Copy(previous)})
 		end
 	end
+
 	table.sort(transitions, function(left, right) return left.Path < right.Path end)
 	return transitions
 end

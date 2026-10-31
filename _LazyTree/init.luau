@@ -9,6 +9,7 @@ return function(rootName, kind, resolve)
 		if not child:IsA("ModuleScript") then
 			error(kind .. " " .. child:GetFullName() .. " must be a ModuleScript or Folder", 3)
 		end
+
 		return require(child)
 	end
 
@@ -19,6 +20,7 @@ return function(rootName, kind, resolve)
 					container = ReplicatedStorage:FindFirstChild(rootName)
 					assert(container, "Missing project folder: " .. rootName)
 				end
+
 				local child = container:FindFirstChild(name)
 				if not child then
 					error(kind .. " " .. name .. " does not exist in " .. container:GetFullName(), 2)

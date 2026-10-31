@@ -35,8 +35,10 @@ function Exports.Missing()
 		for _, dependency in ipairs(details.dependencies) do
 			if Exports.Values[dependency] == nil then missing[#missing + 1] = dependency end
 		end
+
 		if #missing > 0 then result[name] = missing end
 	end
+
 	return result
 end
 
@@ -46,6 +48,7 @@ function Exports.Unresolved()
 	for name, dependencies in pairs(Exports.Missing()) do
 		unresolved[#unresolved + 1] = name .. " -> " .. table.concat(dependencies, ", ")
 	end
+
 	if #unresolved == 0 then return nil end
 	table.sort(unresolved)
 	return "Unresolved dependencies: " .. table.concat(unresolved, "; ")

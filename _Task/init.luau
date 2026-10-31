@@ -6,6 +6,7 @@ function Task.Cancel(target)
 	if not success then
 		warn("Unable to cancel task: " .. tostring(message))
 	end
+
 	return success
 end
 
@@ -33,6 +34,7 @@ function Task.Run(callback, ...)
 	if not freeRunner or coroutine.status(freeRunner) == "dead" then
 		freeRunner = coroutine.create(runLoop)
 	end
+
 	task.spawn(freeRunner, callback, ...)
 end
 

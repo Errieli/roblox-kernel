@@ -15,6 +15,7 @@ function Diagnostics.Holders(threads, threadSources)
 			}
 		end
 	end
+
 	table.sort(holders, function(left, right) return left.source < right.source end)
 	return holders
 end
@@ -24,6 +25,7 @@ function Diagnostics.StallWarning(stall)
 	for _, holder in ipairs(stall.holders) do
 		lines[#lines + 1] = string.format("  %s (%s)\n%s", holder.source, holder.status, holder.trace)
 	end
+
 	return string.format(
 		"Kernel phase %s has waited %.1fs for %d initializer(s):\n%s",
 		stall.phase, stall.waited, #stall.holders, table.concat(lines, "\n")
@@ -37,6 +39,7 @@ local function copyFailures(state)
 		result[phase] = {}
 		for index, entry in ipairs(entries) do result[phase][index] = table.clone(entry) end
 	end
+
 	return result
 end
 
@@ -51,8 +54,10 @@ local function copyStalls(state, now)
 			entry.holders = {}
 			for index, holder in ipairs(stall.holders) do entry.holders[index] = table.clone(holder) end
 		end
+
 		result[state.phaseName(priority)] = entry
 	end
+
 	return result
 end
 

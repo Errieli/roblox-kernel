@@ -24,10 +24,12 @@ local function add(self, object)
 		if type(object.Disconnect) == "function" then cleaner = function(value) value:Disconnect() end
 		elseif type(object.Destroy) == "function" then cleaner = function(value) value:Destroy() end end
 	end
+
 	if not cleaner then
 		warn(string.format("Invalid Recycle object type: %s\n%s", typeof(object), debug.traceback()))
 		return false
 	end
+
 	self._items[#self._items + 1] = {Cleaner = cleaner, Object = object}
 	return true
 end
@@ -43,6 +45,7 @@ function Recycle:Connect(objects)
 	else
 		add(self, objects)
 	end
+
 	return objects
 end
 
@@ -55,6 +58,7 @@ function Recycle:Disconnect()
 		local success, message = pcall(item.Cleaner, item.Object)
 		if not success then warn("Recycle cleanup failed: " .. tostring(message)) end
 	end
+
 	self._cleaning = false
 end
 
@@ -77,6 +81,7 @@ function Recycle:AttachToInstance(instance)
 	self:Connect(instance.Destroying:Connect(function()
 		self:Destroy()
 	end))
+
 	return self
 end
 
