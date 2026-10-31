@@ -6,7 +6,7 @@ A small runtime foundation for Roblox games, installed as one ModuleScript at `R
 local Kernel = require(game.ReplicatedFirst.Kernel)
 ```
 
-> **Status: `0.2.0-candidate.15` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
+> **Status: `0.2.0-candidate.16` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
 
 ## Installation
 
@@ -86,9 +86,9 @@ print(Utils.FormatNumber.Compact(1500)) -- 1.5K
 
 A missing `Utils` folder or utility raises an error that names it.
 
-### `_ProfileData`
+### `_DataTree` and `_DataChanges`
 
-`Kernel._ProfileData` validates and copies serializable data trees (finite numbers, booleans, strings, dense arrays and string-keyed dictionaries; no cycles) and computes change paths. It supports a separate player-data runtime and is not a public `Kernel` export.
+`Kernel._DataTree` validates and copies serializable data trees (finite numbers, booleans, strings, dense arrays and string-keyed dictionaries; no cycles). `Kernel._DataChanges` turns one write into change events for the affected paths. Both support a separate player-data runtime and are not public `Kernel` exports.
 
 ## License
 
