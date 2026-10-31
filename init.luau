@@ -18,14 +18,12 @@ local exportInfo = {}
 local calls = {}
 local waitingThreads = {}
 local sourcePhases = {}
-local threadPhases = setmetatable({}, {__mode = "k"})
 local threadSources = setmetatable({}, {__mode = "k"})
 local phaseStalls = {}
 local stallSeconds = 30
 local configured = false
 local bootstrapFailure
 local errorConnection
-local failPhase
 local phaseStates = {}
 local phaseFailures = {}
 local activePhase = 0
@@ -35,11 +33,7 @@ for priority = 1, PHASE_COUNT do
 	calls[priority] = {}
 	waitingThreads[priority] = {}
 	phaseFailures[priority] = {}
-	phaseStates[priority] = {
-		status = "Pending",
-		startedAt = nil,
-		completedAt = nil,
-	}
+	phaseStates[priority] = {status = "Pending"}
 end
 
 local function environment()
@@ -76,13 +70,6 @@ local function sourceName()
 	return "Unknown"
 end
 
-local function copyArray(values)
-	local result = {}
-	if typeof(values) ~= "table" then return result end
-	for index, value in ipairs(values) do result[index] = value end
-	return result
-end
-
 local function trackRegistrationThread()
 	local thread = coroutine.running()
 	if thread and calls[PHASES.Preload] then
@@ -104,7 +91,7 @@ local function register(name, value, metadata)
 	local dependencies = metadata.dependencies
 	if dependencies == nil then dependencies = {} end
 	assert(typeof(dependencies) == "table", "Kernel dependencies must be a table: " .. name)
-	dependencies = copyArray(dependencies)
+	dependencies = table.clone(dependencies)
 	for _, dependency in ipairs(dependencies) do
 		assert(typeof(dependency) == "string" and dependency ~= "", "Invalid Kernel dependency for " .. name)
 	end
@@ -154,7 +141,6 @@ end
 local function resumeWaiting(priority, thread, registry, source)
 	sourcePhases[source] = priority
 	registry[thread] = true
-	threadPhases[thread] = priority
 	threadSources[thread] = source
 	Task.Defer(function()
 		-- A failed bootstrap may have cancelled it before this turn.
@@ -186,7 +172,6 @@ function hidden.Yield(phase, unexpected)
 	if state.status == "Running" and priority == activePhase then
 		local source = sourceName()
 		waitingThreads[priority][thread] = true
-		threadPhases[thread] = priority
 		sourcePhases[source] = priority
 		threadSources[thread] = source
 	end
@@ -291,7 +276,7 @@ local function waitForThreads(threads, priority, since)
 	end
 end
 
-failPhase = function(priority, message)
+local function failPhase(priority, message)
 	if bootstrapFailure then return end
 	message = string.format("Kernel phase %s failed: %s", phaseName(priority), message)
 	bootstrapFailure = {phase = phaseName(priority), message = message, occurredAt = os.clock()}
