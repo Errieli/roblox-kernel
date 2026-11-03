@@ -56,6 +56,8 @@ Exports.AddBuiltin("Players", require(script._Players), "Observes the live playe
 Exports.AddBuiltin("Multiplier", require(script._Multiplier), "Combines named multiplier sources and change signals.")
 Exports.AddBuiltin("Recycle", require(script._Recycle), "Collects runtime resources for deterministic cleanup.")
 Exports.AddBuiltin("Configs", LazyTree("Configs", "Config"), "Lazily resolves and caches configuration modules.")
+-- Rules are the game's pure shared logic (ReplicatedStorage.Rules): computed from Configs, with no state of their own.
+Exports.AddBuiltin("Rules", LazyTree("Rules", "Rule"), "Lazily resolves the game's pure shared rules in ReplicatedStorage.Rules.")
 Exports.AddBuiltin("Assets", LazyTree("Assets", "Asset", function(child) return child end), "Lazily maps replicated game assets.")
 
 Phases.Start(Exports.Unresolved)

@@ -6,7 +6,7 @@ A small runtime foundation for Roblox games, installed as one ModuleScript at `R
 local Kernel = require(game.ReplicatedFirst.Kernel)
 ```
 
-> **Status: `0.2.0-candidate.18` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
+> **Status: `0.2.0-candidate.20` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
 
 ## Installation
 
@@ -59,6 +59,7 @@ Kernel.Inventory.Add(player, "Sword") -- Exports are read as Kernel.<name>.
 | `Kernel.Configs` | Lazily requires ModuleScripts from `ReplicatedStorage.Configs` (subfolders nest): `Kernel.Configs.Items.Sword` |
 | `Kernel.Assets` | Lazily maps instances in `ReplicatedStorage.Assets`: `Kernel.Assets.Effects.Spark` |
 | `Kernel.Utils` | Your game's utilities in `ReplicatedStorage.Utils`, loaded on first use |
+| `Kernel.Rules` | Your game's pure shared rules in `ReplicatedStorage.Rules`, loaded on first use: `Kernel.Rules.Forge.Upgrade` |
 
 ### Events
 
@@ -85,6 +86,15 @@ print(Utils.FormatNumber.Compact(1500)) -- 1.5K
 ```
 
 A missing `Utils` folder or utility raises an error that names it.
+
+### Rules
+
+`Kernel.Rules.<System>.<Name>` requires `ReplicatedStorage.Rules.<System>.<Name>` on first use, the same way. A rule is pure logic that both client and server need, such as a cost, a chance or a damage formula: it reads `Kernel.Configs`, `Kernel.Utils` and other rules, and nothing with state or lifecycle (no profiles, network, players, schedulers or phase waits). Because `ReplicatedStorage` replicates, anything that must stay secret, such as real drop tables, stays on the server. Group rules by the system that owns them. A game without the `Rules` folder is unaffected until it reads `Kernel.Rules`.
+
+```luau
+local Kernel = require(game.ReplicatedFirst.Kernel)
+local chance = Kernel.Rules.Forge.Upgrade.Chance(level)
+```
 
 ### `_DataTree` and `_DataChanges`
 
