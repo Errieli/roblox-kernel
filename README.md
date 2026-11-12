@@ -6,7 +6,7 @@ A small runtime foundation for Roblox games, installed as one ModuleScript at `R
 local Kernel = require(game.ReplicatedFirst.Kernel)
 ```
 
-> **Status: `0.2.0-candidate.20` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
+> **Status: `0.2.0-candidate.21` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
 
 ## Installation
 
@@ -86,6 +86,16 @@ print(Utils.FormatNumber.Compact(1500)) -- 1.5K
 ```
 
 A missing `Utils` folder or utility raises an error that names it.
+
+### Project folders
+
+`Kernel.Utils`, `Kernel.Configs`, `Kernel.Rules` and `Kernel.Assets` look for their folder at the `ReplicatedStorage` root first and, when it is not there, inside `ReplicatedStorage.Modules`. A game with another layout lists the folders to search, in order, in its single `Kernel.Configure` call before the first lookup:
+
+```luau
+Kernel.Configure({ProjectFolders = {"Shared", "Modules"}}) -- {} keeps only the root
+```
+
+Each folder is located once, on its first lookup; a declaration after a lookup is rejected.
 
 ### Rules
 
