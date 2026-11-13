@@ -90,10 +90,16 @@ function Events.Subscribed(prefix)
 	return names
 end
 
+-- The listener lives only as long as the wait: a thread resumed or cancelled by someone else is left alone.
 function Events.Wait(name)
 	local thread = coroutine.running()
-	Events.Once(name, function(...) task.spawn(thread, ...) end)
-	return coroutine.yield()
+	local disconnect = Events.Once(name, function(...)
+		if coroutine.status(thread) == "suspended" then task.spawn(thread, ...) end
+	end)
+
+	local values = table.pack(coroutine.yield())
+	disconnect()
+	return table.unpack(values, 1, values.n)
 end
 
 function Events.WaitState(name)

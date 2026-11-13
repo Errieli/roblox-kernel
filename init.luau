@@ -6,15 +6,8 @@ local Phases = require(script._Phases)
 local LazyTree = require(script._LazyTree)
 
 local exports = Exports.Values
-local meta = {}
-
-local function environment()
-	if RunService:IsServer() then return "Server" end
-	if RunService:IsClient() then return "Client" end
-	return "Shared"
-end
-
-local runtimeEnvironment = environment()
+local meta = {__index = exports}
+local runtimeEnvironment = if RunService:IsServer() then "Server" elseif RunService:IsClient() then "Client" else "Shared"
 
 -- Where the game's Utils, Configs, Rules and Assets folders live: the ReplicatedStorage root first,
 -- then these ReplicatedStorage children in order. Kernel.Configure({ProjectFolders = {...}}) replaces
@@ -57,10 +50,6 @@ function exports.Info()
 	state.exportInfo = Exports.Info
 	state.missingDependencies = Exports.Missing()
 	return Diagnostics.Snapshot(state, os.clock())
-end
-
-function meta:__index(index)
-	return rawget(exports, index)
 end
 
 function meta:__newindex(index)

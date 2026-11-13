@@ -16,8 +16,7 @@ function Exports.Add(definition)
 	assert(Exports.Values[name] == nil, "Duplicate Kernel export: " .. name)
 	assert(typeof(purpose) == "string" and purpose ~= "", "Kernel export purpose is required: " .. name)
 
-	local dependencies = definition.dependencies
-	if dependencies == nil then dependencies = {} end
+	local dependencies = definition.dependencies or {}
 	assert(typeof(dependencies) == "table", "Kernel dependencies must be a table: " .. name)
 	dependencies = table.clone(dependencies)
 	for _, dependency in ipairs(dependencies) do

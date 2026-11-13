@@ -6,7 +6,7 @@ A small runtime foundation for Roblox games, installed as one ModuleScript at `R
 local Kernel = require(game.ReplicatedFirst.Kernel)
 ```
 
-> **Status: `0.2.0-candidate.22` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
+> **Status: `0.2.0-candidate.23` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
 
 ## Installation
 
@@ -40,7 +40,7 @@ Kernel.Yield("Runtime")
 Kernel.Inventory.Add(player, "Sword") -- Exports are read as Kernel.<name>.
 ```
 
-- `Kernel.Yield(phase)` suspends the script until every earlier phase has completed. It does not wait for other scripts in the same phase. It takes only the phase: code that must not block its script runs in `Kernel.Task.Spawn(function() ... end)`.
+- `Kernel.Yield(phase)` suspends the script until every earlier phase has completed. It does not wait for other scripts in the same phase. It takes only the phase. Call it inline in the script's own thread; wrap it in `Kernel.Task.Spawn(function() ... end)` only when code after it in the same script must keep running (a ModuleScript that must return, or a later registration).
 - `Kernel{name, value, purpose, dependencies?}` registers a read-only export; it is the only registration form. Duplicate names are rejected, and dependencies still missing when `Ready` finishes fail startup with a clear message.
 - `Kernel.Info()` returns diagnostics: each export's purpose and dependencies, phase status and timing, failures, stalled phases and missing dependencies.
 - On the client, the first phase starts after `game.Loaded`. An error in a phase stops later phases and is reported.

@@ -126,8 +126,8 @@ local function resumeWaiting(priority, thread, registry, source)
 end
 
 -- Yield pauses the calling thread until every earlier phase completes and enters
--- the named phase. It does not wait for other work in the same phase. Code that
--- must not block its script runs in its own thread: Kernel.Task.Spawn(function() ... end).
+-- the named phase. It does not wait for other work in the same phase. It runs in
+-- the caller's thread; spawn one only when code after it must not wait.
 function Phases.Yield(phase, unexpected)
 	local priority = resolvePhase(phase)
 	assert(unexpected == nil, "Kernel.Yield takes only a phase; run the code after it returns")
