@@ -1,13 +1,11 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Mirrors ReplicatedStorage[rootName] lazily: each child is resolved on first
--- access and cached. Folders become nested mirrors; any other child is
--- required as a ModuleScript unless resolve(child) decides its value.
+-- Mirrors the folder at ReplicatedStorage.<path...> lazily: the folder is
+-- located on first access, and each child is resolved on first access and
+-- cached. Folders become nested mirrors; any other child is required as a
+-- ModuleScript unless resolve(child) decides its value.
 -- kind names the entry in errors ("Config", "Utility", "Asset").
--- search, when given, is shared with the facade: search.Folders lists the
--- ReplicatedStorage children looked in, in order, when the root has no
--- rootName folder; search.Resolved records that a lookup has happened.
-return function(rootName, kind, resolve, search)
+return function(path, kind, resolve)
 	resolve = resolve or function(child)
 		if not child:IsA("ModuleScript") then
 			error(kind .. " " .. child:GetFullName() .. " must be a ModuleScript or Folder", 3)
@@ -17,20 +15,15 @@ return function(rootName, kind, resolve, search)
 	end
 
 	local function locate()
-		if search then search.Resolved = true end
-
-		local container = ReplicatedStorage:FindFirstChild(rootName)
-		if container then return container end
-
-		local searched = {"ReplicatedStorage"}
-		for _, name in if search then search.Folders else {} do
-			local folder = ReplicatedStorage:FindFirstChild(name)
-			container = folder and folder:FindFirstChild(rootName)
-			if container then return container end
-			searched[#searched + 1] = "ReplicatedStorage." .. name
+		local container = ReplicatedStorage
+		for _, name in path do
+			container = container:FindFirstChild(name)
+			if not container then
+				error("Missing project folder: ReplicatedStorage." .. table.concat(path, "."), 3)
+			end
 		end
 
-		error("Missing project folder: " .. rootName .. " (searched " .. table.concat(searched, ", ") .. ")", 3)
+		return container
 	end
 
 	local function mirror(container)

@@ -6,7 +6,7 @@ A small runtime foundation for Roblox games, installed as one ModuleScript at `R
 local Kernel = require(game.ReplicatedFirst.Kernel)
 ```
 
-> **Status: `0.2.0-candidate.23` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
+> **Status: `0.2.0-candidate.24` (release candidate).** Used in production games, with no stable release yet. Test it in your own place before adopting it.
 
 ## Installation
 
@@ -56,10 +56,10 @@ Kernel.Inventory.Add(player, "Sword") -- Exports are read as Kernel.<name>.
 | `Kernel.Players` | `Added(callback)` and `Removed(callback)` for current and future players; `Online` lists them |
 | `Kernel.Class` | Builds a constructor from a table with optional `Constructor` and `Destructor` |
 | `Kernel.Multiplier` | Creates multiplier groups that combine named sources per type, with `Set`, `Get`, `GetSource` and `Changed` |
-| `Kernel.Configs` | Lazily requires ModuleScripts from `ReplicatedStorage.Configs` (subfolders nest): `Kernel.Configs.Items.Sword` |
+| `Kernel.Configs` | Lazily requires ModuleScripts from `ReplicatedStorage.Modules.Configs` (subfolders nest): `Kernel.Configs.Items.Sword` |
 | `Kernel.Assets` | Lazily maps instances in `ReplicatedStorage.Assets`: `Kernel.Assets.Effects.Spark` |
-| `Kernel.Utils` | Your game's utilities in `ReplicatedStorage.Utils`, loaded on first use |
-| `Kernel.Rules` | Your game's pure shared rules in `ReplicatedStorage.Rules`, loaded on first use: `Kernel.Rules.Forge.Upgrade` |
+| `Kernel.Utils` | Your game's utilities in `ReplicatedStorage.Modules.Utils`, loaded on first use |
+| `Kernel.Rules` | Your game's pure shared rules in `ReplicatedStorage.Modules.Rules`, loaded on first use: `Kernel.Rules.Forge.Upgrade` |
 
 ### Events
 
@@ -78,7 +78,7 @@ Kernel.Events.Observe("Map Ready", function(map) end)
 
 ### Utilities
 
-`Kernel.Utils.<Name>` requires `ReplicatedStorage.Utils.<Name>` the first time it is used and caches it. Folders nest (`Kernel.Utils.Text.FormatTime`). The Kernel ships no utilities: put the ModuleScripts your game needs in `ReplicatedStorage.Utils`.
+`Kernel.Utils.<Name>` requires `ReplicatedStorage.Modules.Utils.<Name>` the first time it is used and caches it. Folders nest (`Kernel.Utils.Text.FormatTime`). The Kernel ships no utilities: put the ModuleScripts your game needs in `ReplicatedStorage.Modules.Utils`.
 
 ```luau
 local Utils = require(game.ReplicatedFirst.Kernel).Utils
@@ -89,17 +89,11 @@ A missing `Utils` folder or utility raises an error that names it.
 
 ### Project folders
 
-`Kernel.Utils`, `Kernel.Configs`, `Kernel.Rules` and `Kernel.Assets` look for their folder at the `ReplicatedStorage` root first and, when it is not there, inside `ReplicatedStorage.Modules`. A game with another layout lists the folders to search, in order, in its single `Kernel.Configure` call before the first lookup:
-
-```luau
-Kernel.Configure({ProjectFolders = {"Shared", "Modules"}}) -- {} keeps only the root
-```
-
-Each folder is located once, on its first lookup; a declaration after a lookup is rejected.
+`Kernel.Utils`, `Kernel.Configs` and `Kernel.Rules` read `ReplicatedStorage.Modules.Utils`, `.Configs` and `.Rules`; `Kernel.Assets` reads `ReplicatedStorage.Assets`. No other place is searched and there is no setting. Each folder is located once, on its first lookup.
 
 ### Rules
 
-`Kernel.Rules.<System>.<Name>` requires `ReplicatedStorage.Rules.<System>.<Name>` on first use, the same way. A rule is pure logic that both client and server need, such as a cost, a chance or a damage formula: it reads `Kernel.Configs`, `Kernel.Utils` and other rules, and nothing with state or lifecycle (no profiles, network, players, schedulers or phase waits). Because `ReplicatedStorage` replicates, anything that must stay secret, such as real drop tables, stays on the server. Group rules by the system that owns them. A game without the `Rules` folder is unaffected until it reads `Kernel.Rules`.
+`Kernel.Rules.<System>.<Name>` requires `ReplicatedStorage.Modules.Rules.<System>.<Name>` on first use, the same way. A rule is pure logic that both client and server need, such as a cost, a chance or a damage formula: it reads `Kernel.Configs`, `Kernel.Utils` and other rules, and nothing with state or lifecycle (no profiles, network, players, schedulers or phase waits). Because `ReplicatedStorage` replicates, anything that must stay secret, such as real drop tables, stays on the server. Group rules by the system that owns them. A game without the `Rules` folder is unaffected until it reads `Kernel.Rules`.
 
 ```luau
 local Kernel = require(game.ReplicatedFirst.Kernel)
